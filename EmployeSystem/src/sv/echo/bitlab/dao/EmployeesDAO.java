@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import sv.echo.bitlab.entidades.Employe;
 
@@ -29,6 +28,11 @@ public class EmployeesDAO extends AbstractDAO<Employe>{
     @Override
     public String getTableKey() {
         return "emp_no";
+    }
+    
+    @Override
+    protected String getSchema() {
+        return "employees";
     }
 
     @Override
@@ -71,5 +75,23 @@ public class EmployeesDAO extends AbstractDAO<Employe>{
         ps.setDate(     6, entity.getHireDate());
         ps.setInt(      7, entity.getIdEmploye());
     }
+    
+    
+    public void executeMultipleTransactions(List<Employe> employees) throws ClassNotFoundException, SQLException{
+        Connection conn = getConnection();
+        try{
+            conn.setAutoCommit(false);
+            
+            //All Code here...
+            
+            conn.commit();
+        }catch (SQLException e){
+            conn.rollback();
+            
+            throw new SQLException(e);
+        }
+    }
+
+
     
 }

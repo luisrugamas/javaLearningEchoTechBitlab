@@ -52,6 +52,11 @@ public class DepartamentDAO extends AbstractDAO<Departaments>{
     public String getTableKey() {
         return "dept_no";
     }
+
+    @Override
+    protected String getSchema() {
+        return "employees";
+    }
     
 
 

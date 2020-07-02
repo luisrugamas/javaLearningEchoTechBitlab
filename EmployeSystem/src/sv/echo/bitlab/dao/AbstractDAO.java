@@ -28,11 +28,11 @@ public abstract class AbstractDAO <T> {
     /**
     * Constante para generar una instrucción SELECT a la BD
     */
-    public final String SQL_SELECT = "SELECT [COLUMNS] FROM [TABLE]";
+    public final String SQL_SELECT = "SELECT [COLUMNS] FROM [SCHEMA].[TABLE]";
     /**
     * Constante para generar una instrucción INSERT a la BD
     */
-    public final String SQL_INSERT = "INSERT INTO [TABLE] ([COLUMNS]) VALUES ([COLUMNS_INDEX])";
+    public final String SQL_INSERT = "INSERT INTO [SCHEMA].[TABLE] ([COLUMNS]) VALUES ([COLUMNS_INDEX])";
     /**
     * Constante para generar el WHERE de uns instrucción SQL
     */
@@ -40,15 +40,19 @@ public abstract class AbstractDAO <T> {
     /**
     * Constante para generar una instrucción DELETE a la BD
     */
-    public final String SQL_DELETE = "DELETE FROM [TABLE] WHERE [CONDITIONS]";
+    public final String SQL_DELETE = "DELETE FROM [SCHEMA].[TABLE] WHERE [CONDITIONS]";
     /**
     * Constante para generar una instrucción UPDATE a la BD
     */
-    public final String SQL_UPDATE = "UPDATE [TABLE] SET [COLUMNS] WHERE [CONDITIONS]";
+    public final String SQL_UPDATE = "UPDATE [SCHEMA].[TABLE] SET [COLUMNS] WHERE [CONDITIONS]";
     /**
     * Constante para indicar la expresión comodin de indicador de reemplazo [TABLE]
     */
     private final String TABLE_INDICATOR = "[TABLE]";
+    /**
+    * Constante para indicar la expresión comodin de indicador de reemplazo [SCHEMA]
+    */
+    private final String SCHEMA_INDICATOR = "[SCHEMA]";
     /**
     * Constante para indicar la expresión comodin de indicador de reemplazo [COLUMNS]
     */
@@ -74,7 +78,7 @@ public abstract class AbstractDAO <T> {
      * @return javax.sql.Connection
      */
     protected Connection getConnection() throws ClassNotFoundException, SQLException{
-        return ConnectionDB.openConnection();
+        return ConnectionDB.getInstance().openConnection();
     }
     
     /**
@@ -151,7 +155,7 @@ public abstract class AbstractDAO <T> {
      */
     protected String getInsertSQL(){
         // Se toma el SQL INSERT INTO [TABLE] ([COLUMNS]) VALUES ([COLUMNS_INDEX])
-        String sql = SQL_INSERT;
+        String sql = getSQLWithSchema(SQL_INSERT);
         
         //Se crea un pequeno proceso de concatenación para basado en la cantidad de columnas genere 
         //los indicadores ? dando como resultado: ?,?,?.... para la sección final del sql insert JDBC
@@ -181,7 +185,7 @@ public abstract class AbstractDAO <T> {
      */
      protected String getSelectSQL(){
         //Se toma la constante con los comodines SELECT [COLUMNS] FROM [TABLE]
-        String sql = SQL_SELECT;
+        String sql = getSQLWithSchema(SQL_SELECT);
         //Se reemplazan los valores de los comodines [TABLE] y [COLUMNS] 
         //con el nombre de la tabla y columnas que indicará la clase hija 
         sql = sql.replace(TABLE_INDICATOR, getTableName()).replace(COLUMNS_INDICATOR, Arrays.toString(getTableColumns()))
@@ -199,7 +203,7 @@ public abstract class AbstractDAO <T> {
          //Se toma la constante con los comodines UPDATE [TABLE] SET [COLUMNS] WHERE [CONDITIONS]
          //En primera linea se reemplaza el comodin de [CONDITIONS] por la columna llave que se indicará en la clase hija
          //Para llevar la siguiente estructura UPDATE [TABLE] SET [COLUMNS] WHERE *columnaLlave = ?*
-        String sql = SQL_UPDATE.replace(CONDITIONS_INDICATOR, getTableKey() + " = ?");
+        String sql = getSQLWithSchema(SQL_UPDATE).replace(CONDITIONS_INDICATOR, getTableKey() + " = ?");
         //Se reemplaza el comodin [TABLE] por la tabla
         sql = sql.replace(TABLE_INDICATOR, getTableName());
         
@@ -222,10 +226,26 @@ public abstract class AbstractDAO <T> {
      */
      protected String getDeleteSQL(){
          //Se reemplazan los comodines [TABLE] y [CONDITIONS] por las condiciones de *llaveTabla = ?*
-         String sql = SQL_DELETE.replace(TABLE_INDICATOR, getTableName()).replace(CONDITIONS_INDICATOR, getTableKey() + " = ?");
+         String sql = getSQLWithSchema(SQL_DELETE).replace(TABLE_INDICATOR, getTableName()).replace(CONDITIONS_INDICATOR, getTableKey() + " = ?");
          log.info("getDeleteSQL - SQL Generado : "+sql);
          return sql;
      }
+     
+     
+     /**
+     * Función que evalua si existe o no un esquema para configurarlo al SQL
+     * @param sql a evaluar
+     * @return SQL modificado
+     */  
+    private String getSQLWithSchema(String sql) {
+        String schema = getSchema();
+        if(schema.equals(null)){
+            return sql.replace(SCHEMA_INDICATOR+".", "");
+        }else{
+            return sql.replace(SCHEMA_INDICATOR, schema);
+        }
+    }
+    
      
      
      /**
@@ -387,6 +407,14 @@ public abstract class AbstractDAO <T> {
      * @return String columna llave
      */  
     protected abstract String getTableKey();
+
+    /**
+     * Función abstracta que devuelve el esquema de la base de datos, en caso de no contener un esquema devolver Null
+     * @return String  esquema de BD
+     */  
+    protected abstract String getSchema();
+
+    
 
     
     
